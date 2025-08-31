@@ -4,7 +4,7 @@ const chalk = require("chalk");
 const ora = require("ora");
 const inquirer = require("inquirer");
 const validateProjectName = require("validate-npm-package-name");
-const { spawn } = require("child_process");
+const { spawn, exec } = require("child_process");
 
 // Import your utilities
 const {
@@ -21,11 +21,6 @@ const {
   checkGitConfig,
 } = require("../utils/gitUtils");
 
-/**
- * Main function to create a new Titas app
- * @param {string} projectName - Name of the project
- * @param {Object} options - CLI options from commander
- */
 /**
  * Check system requirements and environment
  */
@@ -81,11 +76,17 @@ async function checkEnvironment() {
   }
 }
 
+/**
+ * Main function to create a new Titas app
+ * @param {string} projectName - Name of the project
+ * @param {Object} options - CLI options from commander
+ */
 async function createApp(projectName, options) {
   // Add environment check for debugging
   if (process.env.DEBUG || options.verbose) {
     await checkEnvironment();
   }
+
   // Validate project name
   const validation = validateProjectName(projectName);
   if (!validation.validForNewPackages) {
@@ -132,6 +133,14 @@ async function createApp(projectName, options) {
       "../../templates",
       templateType
     );
+
+    // Check if template exists
+    if (!(await fs.pathExists(templatePath))) {
+      throw new Error(
+        `Template "${templateType}" not found at ${templatePath}`
+      );
+    }
+
     await copyFiles(templatePath, projectPath, {
       overwrite: true,
       filter: (src, dest) => {
@@ -166,8 +175,6 @@ async function createApp(projectName, options) {
         console.log(chalk.gray(`  cd ${projectName}`));
         console.log(chalk.gray("  npm install"));
         console.log();
-
-        // Continue without throwing error
       }
     }
 
@@ -256,24 +263,29 @@ async function processTemplate(projectPath, variables) {
   let packageJson = {};
 
   try {
-    packageJson = await fs.readJson(packageJsonPath);
+    if (await fs.pathExists(packageJsonPath)) {
+      packageJson = await fs.readJson(packageJsonPath);
+    }
   } catch (error) {
-    // Create basic package.json if it doesn't exist
-    packageJson = {
-      name: variables.projectName,
-      version: "0.1.0",
-      private: true,
-      scripts: {
-        dev: "next dev",
-        build: "next build",
-        start: "next start",
-        lint: "next lint",
-      },
-    };
+    console.warn(
+      chalk.yellow(`Warning: Could not read package.json: ${error.message}`)
+    );
   }
 
-  // Update package.json with project details
-  packageJson.name = variables.projectName;
+  // Create or update package.json with project details
+  packageJson = {
+    name: variables.projectName,
+    version: "0.1.0",
+    private: true,
+    scripts: {
+      dev: "next dev",
+      build: "next build",
+      start: "next start",
+      lint: "next lint",
+      ...packageJson.scripts,
+    },
+    ...packageJson,
+  };
 
   // Add TypeScript dependencies if requested
   if (variables.typescript) {
@@ -306,7 +318,10 @@ async function processTemplate(projectPath, variables) {
  * Install project dependencies
  */
 async function installDependencies(projectPath) {
-  return new Promise((resolve, reject) => {
+  const { promisify } = require("util");
+  const execAsync = promisify(exec);
+
+  try {
     // Determine which package manager to use
     const packageManager = detectPackageManager();
 
@@ -314,39 +329,75 @@ async function installDependencies(projectPath) {
       chalk.blue(`📦 Installing dependencies with ${packageManager}...`)
     );
 
-    const installCommand = packageManager === "yarn" ? "yarn" : "npm install";
-    const [command, ...args] = installCommand.split(" ");
+    const command = packageManager === "yarn" ? "yarn install" : "npm install";
 
-    const child = spawn(command, args, {
+    console.log(chalk.gray(`Running: ${command}`));
+
+    const { stdout, stderr } = await execAsync(command, {
       cwd: projectPath,
-      stdio: "pipe",
+      maxBuffer: 1024 * 1024 * 10, // 10MB buffer
+      env: { ...process.env, FORCE_COLOR: "0" }, // Disable colors for cleaner output
     });
 
-    child.on("close", (code) => {
-      if (code === 0) {
-        resolve();
-      } else {
-        reject(new Error(`Package installation failed with code ${code}`));
-      }
-    });
+    // Log output if there's useful information
+    if (stdout && stdout.trim()) {
+      console.log(chalk.gray("Installation completed"));
+    }
 
-    child.on("error", (error) => {
-      reject(
-        new Error(`Failed to start package installation: ${error.message}`)
+    // Show warnings but don't fail
+    if (stderr && stderr.trim() && !stderr.includes("WARN")) {
+      console.warn(chalk.yellow("Installation warnings:"));
+      console.warn(stderr.trim());
+    }
+
+    console.log(chalk.green("✅ Dependencies installed successfully!"));
+  } catch (error) {
+    // More specific error handling
+    if (error.code === "ENOENT") {
+      throw new Error(
+        `${
+          packageManager === "yarn" ? "Yarn" : "npm"
+        } is not installed or not found in PATH. Please install Node.js from https://nodejs.org/`
       );
-    });
-  });
+    } else if (error.code) {
+      throw new Error(
+        `Package installation failed with code ${error.code}: ${error.message}`
+      );
+    } else {
+      throw new Error(`Package installation failed: ${error.message}`);
+    }
+  }
 }
 
 /**
  * Detect which package manager to use
  */
 function detectPackageManager() {
-  try {
-    require.resolve("yarn");
+  const { execSync } = require("child_process");
+
+  // First check if yarn.lock exists in current directory
+  if (fs.existsSync("yarn.lock")) {
     return "yarn";
-  } catch {
-    return "npm";
+  }
+
+  // Then try to detect if yarn is available
+  try {
+    execSync("yarn --version", { stdio: "ignore", timeout: 5000 });
+    return "yarn";
+  } catch (error) {
+    // Yarn not available, check npm
+    try {
+      execSync("npm --version", { stdio: "ignore", timeout: 5000 });
+      return "npm";
+    } catch (npmError) {
+      // Neither available, default to npm
+      console.warn(
+        chalk.yellow(
+          "⚠️ Neither npm nor yarn could be detected. Defaulting to npm."
+        )
+      );
+      return "npm";
+    }
   }
 }
 
@@ -395,98 +446,6 @@ function showNextSteps(projectName, options) {
 
   console.log(`  ${chalk.cyan("npm run dev")}`);
   console.log("\nHappy coding! 🚀\n");
-}
-
-/**
- * Install project dependencies
- */
-async function installDependencies(projectPath) {
-  const { exec } = require("child_process");
-  const { promisify } = require("util");
-  const execAsync = promisify(exec);
-
-  try {
-    // Determine which package manager to use
-    const packageManager = detectPackageManager();
-
-    console.log(
-      chalk.blue(`📦 Installing dependencies with ${packageManager}...`)
-    );
-
-    // Use exec instead of spawn for better cross-platform compatibility
-    const command = packageManager === "yarn" ? "yarn install" : "npm install";
-
-    console.log(chalk.gray(`Running: ${command}`));
-
-    const { stdout, stderr } = await execAsync(command, {
-      cwd: projectPath,
-      maxBuffer: 1024 * 1024 * 10, // 10MB buffer
-      env: { ...process.env, FORCE_COLOR: "0" }, // Disable colors for cleaner output
-    });
-
-    // Log output if there's useful information
-    if (stdout && stdout.trim()) {
-      console.log(chalk.gray("Installation output:"));
-      console.log(stdout.trim());
-    }
-
-    // Show warnings but don't fail
-    if (stderr && stderr.trim() && !stderr.includes("WARN")) {
-      console.warn(chalk.yellow("Installation warnings:"));
-      console.warn(stderr.trim());
-    }
-
-    console.log(chalk.green("✅ Dependencies installed successfully!"));
-  } catch (error) {
-    // More specific error handling
-    if (error.code === "ENOENT") {
-      throw new Error(
-        `${
-          packageManager === "yarn" ? "Yarn" : "npm"
-        } is not installed or not found in PATH. Please install Node.js from https://nodejs.org/`
-      );
-    } else if (error.code) {
-      throw new Error(
-        `Package installation failed with code ${error.code}: ${error.message}`
-      );
-    } else {
-      throw new Error(`Package installation failed: ${error.message}`);
-    }
-  }
-}
-
-/**
- * Detect which package manager to use
- */
-function detectPackageManager() {
-  const { execSync } = require("child_process");
-  const fs = require("fs");
-  const path = require("path");
-
-  // First check if yarn.lock exists in current directory
-  if (fs.existsSync("yarn.lock")) {
-    return "yarn";
-  }
-
-  // Then try to detect if yarn is available
-  try {
-    execSync("yarn --version", { stdio: "ignore", timeout: 5000 });
-    return "yarn";
-  } catch (error) {
-    // Yarn not available, check npm
-    try {
-      execSync("npm --version", { stdio: "ignore", timeout: 5000 });
-      return "npm";
-    } catch (npmError) {
-      // Neither available, default to npm
-      console.warn(
-        chalk.yellow(
-          "⚠️ Neither npm nor yarn could be detected. Defaulting to npm."
-        )
-      );
-      return "npm";
-    }
-  }
 }
 
 module.exports = { createApp, checkEnvironment };
