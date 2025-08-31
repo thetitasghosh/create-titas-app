@@ -127,7 +127,11 @@ async function createApp(projectName, options) {
 
     // Copy template files
     spinner.text = "Copying template files...";
-    const templatePath = path.join(__dirname, "../../templates", templateType);
+    const templatePath = path.resolve(
+      __dirname,
+      "../../templates",
+      templateType
+    );
     await copyFiles(templatePath, projectPath, {
       overwrite: true,
       filter: (src, dest) => {
