@@ -1,6 +1,6 @@
 {
   "name": "create-titas-app",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "CLI tool to create Titas app templates",
   "bin": {
     "create-titas-app": "./bin/cli.js"
