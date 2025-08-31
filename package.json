@@ -5,7 +5,6 @@
   "bin": {
     "create-titas-app": "./bin/cli.js"
   },
-  "type": "module",
   "files": [
     "bin",
     "src",
