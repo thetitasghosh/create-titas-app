@@ -130,7 +130,7 @@ async function createApp(projectName, options) {
     spinner.text = "Copying template files...";
     const templatePath = path.resolve(
       __dirname,
-      "../templates",
+      "../../templates",
       templateType
     );
 
