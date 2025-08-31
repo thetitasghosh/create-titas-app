@@ -12,7 +12,7 @@ async function copyTemplate(templateType, targetPath) {
   try {
     const templatePath = path.resolve(
       __dirname,
-      "../../templates",
+      "../templates",
       templateType
     );
 
