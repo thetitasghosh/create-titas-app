@@ -54,6 +54,7 @@ npx create-titas-app@latest my-project
 ```
 
 You'll be prompted to choose:
+
 - Template type
 - Additional features
 - Configuration options
@@ -61,12 +62,14 @@ You'll be prompted to choose:
 ### Command Line Flags
 
 #### Template Options
+
 - `--portfolio` - Create a portfolio/personal website
 - `--ecom` - Create an e-commerce application
 - `--dashboard` - Create an analytics dashboard
 - `--webapp` - Create a full-stack web application
 
 #### Feature Options
+
 - `--typescript` - Add TypeScript support
 - `--tailwind` - Include Tailwind CSS
 - `--no-git` - Skip Git repository initialization
@@ -91,9 +94,11 @@ create-titas-app my-saas --webapp --typescript --no-install
 ## Templates 📋
 
 ### 📄 Portfolio Template
+
 Perfect for personal websites, portfolios, and professional showcases.
 
 **Includes:**
+
 - Modern responsive design
 - Contact forms
 - Project showcase sections
@@ -101,9 +106,11 @@ Perfect for personal websites, portfolios, and professional showcases.
 - SEO optimization
 
 ### 🛒 E-commerce Template
+
 Ready-to-use online store with shopping cart and payment integration.
 
 **Includes:**
+
 - Product catalog
 - Shopping cart functionality
 - Payment gateway integration
@@ -111,9 +118,11 @@ Ready-to-use online store with shopping cart and payment integration.
 - Admin dashboard
 
 ### 📊 Dashboard Template
+
 Analytics and data visualization dashboard for business applications.
 
 **Includes:**
+
 - Chart and graph components
 - Data tables
 - User management
@@ -121,9 +130,11 @@ Analytics and data visualization dashboard for business applications.
 - Responsive layout
 
 ### 🌐 Web App Template
+
 Full-stack application foundation for complex web applications.
 
 **Includes:**
+
 - Authentication system
 - Database integration
 - API routes
@@ -171,25 +182,32 @@ npm run lint
 ## Configuration Options
 
 ### Package Manager Detection
+
 The CLI automatically detects and uses your preferred package manager:
+
 - **npm** (default)
 - **yarn** (if available)
 
 ### Git Integration
+
 - Automatically initializes Git repository
 - Creates comprehensive `.gitignore`
 - Makes initial commit
 - Sets up `main` branch as default
 
 ### TypeScript Support
+
 When using `--typescript` flag:
+
 - Adds TypeScript dependencies
 - Configures `tsconfig.json`
 - Converts template files to TypeScript
 - Sets up type definitions
 
 ### Tailwind CSS Integration
+
 When using `--tailwind` flag:
+
 - Installs Tailwind CSS and dependencies
 - Configures `tailwind.config.js`
 - Sets up PostCSS configuration
@@ -198,6 +216,7 @@ When using `--tailwind` flag:
 ## Advanced Usage
 
 ### Skip Installations
+
 ```bash
 create-titas-app my-project --portfolio --no-install
 cd my-project
@@ -205,6 +224,7 @@ npm install  # Install manually
 ```
 
 ### Custom Git Configuration
+
 ```bash
 create-titas-app my-project --webapp --no-git
 cd my-project
@@ -213,6 +233,7 @@ git remote add origin https://github.com/username/repo.git
 ```
 
 ### Environment Setup
+
 ```bash
 # Check environment information
 create-titas-app info
@@ -223,6 +244,7 @@ create-titas-app info
 ### Common Issues
 
 #### 1. `spawn npm ENOENT` error
+
 **Solution:** Ensure Node.js and npm are properly installed and in your PATH.
 
 ```bash
@@ -235,6 +257,7 @@ npm --version
 ```
 
 #### 2. Permission errors on macOS/Linux
+
 **Solution:** Use npx or fix npm permissions.
 
 ```bash
@@ -246,6 +269,7 @@ sudo chown -R $(whoami) ~/.npm
 ```
 
 #### 3. Template not found
+
 **Solution:** Ensure you're using a valid template flag.
 
 ```bash
@@ -257,6 +281,7 @@ sudo chown -R $(whoami) ~/.npm
 ```
 
 #### 4. Git initialization fails
+
 **Solution:** Check Git configuration.
 
 ```bash
@@ -267,12 +292,15 @@ git config --global user.email "your.email@example.com"
 ### Windows-Specific Issues
 
 #### PowerShell Execution Policy
+
 ```powershell
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
 #### Path Issues
+
 Ensure Node.js is in your PATH:
+
 ```powershell
 $env:PATH += ";C:\Program Files\nodejs"
 ```
@@ -314,6 +342,7 @@ create-titas-app test-project --portfolio
 ## Changelog 📝
 
 ### v1.0.0
+
 - Initial release
 - Four base templates (Portfolio, E-commerce, Dashboard, Web App)
 - TypeScript and Tailwind CSS support
@@ -340,4 +369,4 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 **Happy coding!** 🚀
 
-Made with ❤️ by [Your Name](https://github.com/thetitasghosh)
+Made with ❤️ by [Titas Ghosh](https://github.com/thetitasghosh)
